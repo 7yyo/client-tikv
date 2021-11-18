@@ -26,27 +26,24 @@ func (c *Completer) Executor(s string) {
 	}
 
 	sql := syntax.ParseSQL(*astNode)
-	if sql == nil {
+	if sql.Error != "" {
+		fmt.Println(sql.Error)
 		return
 	}
 
-	var msg string
-	kv := NewKVPair(sql)
-	switch sql.Type {
-	case "insert":
-		msg, err = c.Put(kv)
-	case "select":
-		msg, err = c.Get(kv)
-	case "delete":
-		msg, err = c.Delete(kv)
-	default:
-	}
-
-	if err != nil {
-		fmt.Println(err)
+	if errMsg := sql.CanOperate(); errMsg != "" {
+		fmt.Println(errMsg)
 		return
 	}
 
-	fmt.Println(msg)
+	switch sql.Operate {
+	case "get":
+		r, err := c.Get(&sql.KvPairs)
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			fmt.Println(r)
+		}
+	}
 
 }

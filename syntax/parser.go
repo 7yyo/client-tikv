@@ -14,6 +14,6 @@ func Parse(sql string) (*ast.StmtNode, error) {
 	return &stmtNodes[0], nil
 }
 
-func ParseSQL(astNode ast.StmtNode) *Sql {
+func ParseSQL(astNode ast.StmtNode) *SQL {
 	return Parser(&astNode)
 }

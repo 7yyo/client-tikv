@@ -8,6 +8,7 @@ import (
 	"github.com/tikv/client-go/v2/tikv"
 	p "github.com/tikv/pd/client"
 	"strings"
+	"tikv-client/syntax"
 	"time"
 )
 
@@ -26,40 +27,20 @@ func NewKvClient(pdEndPoint []string) (*tikv.RawKVClient, error) {
 	return c, nil
 }
 
-func (c *Completer) Put(kv *KvPair) (string, error) {
+func (c *Completer) Get(KvPairs *[]syntax.KvPair) (string, error) {
+	var result []syntax.KvPair
 	t := time.Now()
-	err := c.client.Put([]byte(kv.Key), []byte(kv.Value))
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("Query OK, 1 row affected (%f sec)", time.Now().Sub(t).Seconds()), nil
-}
-
-func (c *Completer) Get(kv *KvPair) (string, error) {
-	t := time.Now()
-	value, err := c.client.Get([]byte(kv.Key))
-	if err != nil {
-		return "", err
-	}
-	if value == nil {
-		return fmt.Sprintf("Empty set (0.00 sec)"), nil
-	}
-	result := []KvPair{
-		{kv.Key, string(value)},
+	for _, kv := range *KvPairs {
+		value, err := c.client.Get([]byte(kv.Key))
+		kv.Value = string(value)
+		if err != nil {
+			return "", err
+		}
+		if value == nil {
+			return fmt.Sprintf("Empty set (0.00 sec)"), nil
+		}
+		result = append(result, kv)
 	}
 	fmt.Println(table.Table(result))
-	return fmt.Sprintf("1 rows in set (%f sec)", time.Now().Sub(t).Seconds()), nil
-}
-
-func (c *Completer) Delete(kv *KvPair) (string, error) {
-	t := time.Now()
-	v, err := c.client.Get([]byte(kv.Key))
-	if v == nil {
-		return fmt.Sprintf("Query OK, 0 row affected (%f sec)", time.Now().Sub(t).Seconds()), nil
-	}
-	err = c.client.Delete([]byte(kv.Key))
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("Query OK, 1 row affected (%f sec)", time.Now().Sub(t).Seconds()), nil
+	return fmt.Sprintf("%d rows in set (%f sec)", len(*KvPairs), time.Now().Sub(t).Seconds()), nil
 }
