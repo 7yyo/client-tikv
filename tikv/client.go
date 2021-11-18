@@ -36,11 +36,13 @@ func (c *Completer) Get(KvPairs *[]syntax.KvPair) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		if value == nil {
-			return fmt.Sprintf("Empty set (0.00 sec)"), nil
+		if value != nil {
+			result = append(result, kv)
 		}
-		result = append(result, kv)
+	}
+	if len(result) == 0 {
+		return fmt.Sprintf("Empty set (0.00 sec)"), nil
 	}
 	fmt.Println(table.Table(result))
-	return fmt.Sprintf("%d rows in set (%f sec)", len(*KvPairs), time.Now().Sub(t).Seconds()), nil
+	return fmt.Sprintf("%d rows in set (%f sec)", len(result), time.Now().Sub(t).Seconds()), nil
 }
