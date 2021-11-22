@@ -25,25 +25,21 @@ func (c *Completer) Executor(s string) {
 		return
 	}
 
-	sql := syntax.ParseSQL(*astNode)
+	sql := syntax.ParseSQL(astNode)
 	if sql.Error != "" {
 		fmt.Println(sql.Error)
 		return
 	}
 
-	if errMsg := sql.CanOperate(); errMsg != "" {
-		fmt.Println(errMsg)
-		return
-	}
-
+	var r string
 	switch sql.Operate {
 	case "get":
-		r, err := c.Get(&sql.KvPairs)
-		if err != nil {
-			fmt.Println(err)
-		} else {
-			fmt.Println(r)
-		}
+		r, err = c.Get(sql)
+	}
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println(r)
 	}
 
 }

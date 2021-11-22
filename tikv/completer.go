@@ -24,7 +24,8 @@ func (c *Completer) Complete(d prompt.Document) []prompt.Suggest {
 		return []prompt.Suggest{}
 	}
 	s := []prompt.Suggest{
-		{Text: "select kv from tikv where k in (", Description: "Get kvpairs from TiKV."},
+		{Text: "select kv from tikv where k = ", Description: "Get kvPair from TiKV"},
+		{Text: "select kv from tikv where k in (", Description: "Get kvpairs from TiKV"},
 	}
 	return prompt.FilterHasPrefix(s, d.GetWordBeforeCursor(), true)
 }

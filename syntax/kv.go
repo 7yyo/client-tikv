@@ -11,20 +11,18 @@ type KvPair struct {
 	Value string
 }
 
-func NewKv(astNode ast.Node) *[]KvPair {
+func ParseKvPairs(astNode ast.Node) []KvPair {
 	var kvPairs []KvPair
+	var kv KvPair
 	switch node := astNode.(type) {
 	case *ast.SelectStmt:
-		var kv KvPair
 		if r, ok := node.Where.(*ast.BinaryOperationExpr); ok {
 			valueExpr := r.R.(*test_driver.ValueExpr)
 			if valueExpr.Type.Tp == mysql.TypeVarString {
 				kv.Key = valueExpr.Datum.GetString()
 			}
 			kvPairs = append(kvPairs, kv)
-		}
-		if r, ok := node.Where.(*ast.PatternInExpr); ok {
-			var kv KvPair
+		} else if r, ok := node.Where.(*ast.PatternInExpr); ok {
 			for _, pair := range r.List {
 				valueExpr := pair.(*test_driver.ValueExpr)
 				if valueExpr.Type.Tp == mysql.TypeVarString {
@@ -35,5 +33,5 @@ func NewKv(astNode ast.Node) *[]KvPair {
 		}
 	default:
 	}
-	return &kvPairs
+	return kvPairs
 }

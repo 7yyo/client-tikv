@@ -9,6 +9,7 @@ type SQL struct {
 	Table
 	Operate string
 	Fields  []*ast.SelectField
+	Cols    []*ast.ColumnDef
 	KvPairs []KvPair
 	Error   string
 }
@@ -25,11 +26,11 @@ func (s *SQL) Enter(astNode ast.Node) (ast.Node, bool) {
 
 	switch node := astNode.(type) {
 	case *ast.SelectStmt:
-		s.KvPairs = *NewKv(node)
-		s.Fields = node.Fields.Fields
 		s.Operate = "get"
+		s.KvPairs = ParseKvPairs(node)
+		s.Fields = node.Fields.Fields
 	default:
-		s.Error = fmt.Sprintf("Unsupport SQL: %s", astNode.Text())
+		s.Error = fmt.Sprintf("Unsupported SQL: '%s'", astNode.Text())
 		return astNode, true
 	}
 	return astNode, true
@@ -37,21 +38,4 @@ func (s *SQL) Enter(astNode ast.Node) (ast.Node, bool) {
 
 func (s *SQL) Leave(node ast.Node) (ast.Node, bool) {
 	return node, true
-}
-
-func (s *SQL) CanOperate() string {
-	if errMsg := s.Table.CheckTableName(); errMsg != "" {
-		return errMsg
-	}
-	if errMsg := s.checkFields(); errMsg != "" {
-		return errMsg
-	}
-	return ""
-}
-
-func (s *SQL) checkFields() string {
-	if s.Fields[0].Text() != "kv" || len(s.Fields) != 1 {
-		return "Illegal field name, must be kv"
-	}
-	return ""
 }
