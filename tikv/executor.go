@@ -19,13 +19,11 @@ func (c *Completer) Executor(s string) {
 		return
 	}
 
-	astNode, err := syntax.Parse(s)
+	sql, err := syntax.ParseSQL(s)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-
-	sql := syntax.ParseSQL(astNode)
 	if sql.Error != "" {
 		fmt.Println(sql.Error)
 		return

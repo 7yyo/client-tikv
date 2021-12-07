@@ -14,6 +14,10 @@ func Parse(sql string) (*ast.StmtNode, error) {
 	return &stmtNodes[0], nil
 }
 
-func ParseSQL(astNode *ast.StmtNode) *SQL {
-	return Parser(astNode)
+func ParseSQL(s string) (*SQL, error) {
+	astNode, err := Parse(s)
+	if err != nil {
+		return nil, err
+	}
+	return Parser(astNode), nil
 }

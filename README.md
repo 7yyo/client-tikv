@@ -1,11 +1,21 @@
 # client-tikv
 
+An interactive kubernetes client featuring auto-complete using go-prompt.
+
+# Get start
 ```shell
- ./tikv-client --pd 127.0.0.1:2379,127.0.0.2:2379,127.0.0.3:2379
+./tikv-client --pd 172.16.5.133:2379
 ```
 
-# usage
-You can query the value directly according to the key.
+# Build
+```shell
+ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a
+```
+
+# Usage
+
+## Get
+You can query the value directly according to the `key`.
 ```sql
 tikv> select kv from tikv where k = 'client';
 +--------+-------+
@@ -24,8 +34,7 @@ tikv> select kv from tikv where k in ('client','pingcap');
 +---------+-------+
 Query OK, 2 rows affected (0.012975 sec)
 ```
-
-If the value is in the standard json format, you can query according to the label, like this
+If the `value` is in the standard `JSON` format, you can query according to the `label`, like this
 ```sql
 tikv> select kv from tikv where k = 'Green';
 +-------+------------------------------------------+
@@ -35,15 +44,7 @@ tikv> select kv from tikv where k = 'Green';
 +-------+------------------------------------------+
 Query OK, 1 rows affected (0.014478 sec)
 
-tikv> select id from tikv where k = 'Green';
-+--------+
-| ID     |
-+--------+
-| 000810 |
-+--------+
-1 rows in set (0.008572 sec)
-
-tikv> select id,password from tikv where k = 'Green';
+tikv> select id, password from tikv where k = 'Green';
 +--------+-------------+
 | ID     | PASSWORD    |
 +--------+-------------+
@@ -51,7 +52,7 @@ tikv> select id,password from tikv where k = 'Green';
 +--------+-------------+
 1 rows in set (0.009683 sec)
 
-tikv> select id,password from tikv where k in ('Green','Jim');
+tikv> select id, password from tikv where k in ('Green','Jim');
 +--------+-------------+
 | ID     | PASSWORD    |
 +--------+-------------+
