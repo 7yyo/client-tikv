@@ -1,5 +1,7 @@
 # client-tikv
 
+A TiKV client, which allows you to operate TiKV like TiDB.
+
 # Get start
 ```shell
 ./tikv-client --pd 172.16.5.133:2379
