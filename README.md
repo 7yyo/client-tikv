@@ -1,7 +1,5 @@
 # client-tikv
 
-An interactive kubernetes client featuring auto-complete using go-prompt.
-
 # Get start
 ```shell
 ./tikv-client --pd 172.16.5.133:2379
