@@ -9,7 +9,9 @@ import (
 
 func (c *Completer) Executor(s string) {
 
-	if s == "exit" || s == "quit" {
+	c.operateType = ""
+
+	if strings.TrimSpace(s) == syntax.Exit || strings.TrimSpace(s) == syntax.Quit || strings.TrimSpace(s) == syntax.Q {
 		fmt.Println("Bye")
 		os.Exit(0)
 		return
@@ -29,10 +31,16 @@ func (c *Completer) Executor(s string) {
 		return
 	}
 
+	if sql.Table.CheckTableName() != "" {
+		return
+	}
+
 	var r string
 	switch sql.Operate {
 	case "get":
 		r, err = c.Get(sql)
+	case "put":
+		r, err = c.Put(sql)
 	}
 	if err != nil {
 		fmt.Println(err)

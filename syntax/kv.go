@@ -31,6 +31,16 @@ func ParseKvPairs(astNode ast.Node) []KvPair {
 				kvPairs = append(kvPairs, kv)
 			}
 		}
+	case *ast.InsertStmt:
+		if len(node.Lists) != 1 || len(node.Lists[0]) == 0 {
+			return nil
+		}
+		for _, list := range node.Lists {
+			kvPairs = append(kvPairs, KvPair{
+				Key:   list[0].(*test_driver.ValueExpr).GetDatumString(),
+				Value: list[1].(*test_driver.ValueExpr).GetDatumString(),
+			})
+		}
 	default:
 	}
 	return kvPairs

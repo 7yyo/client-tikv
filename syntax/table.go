@@ -11,18 +11,24 @@ type Table struct {
 	Name string
 }
 
-func (t *Table) TableName(node ast.Node) {
-	if r, ok := node.(*ast.TableName); ok {
-		t.Name = r.Name.String()
+func (t *Table) TableName(astNode ast.Node) {
+
+	switch node := astNode.(type) {
+	case *ast.TableName:
+		t.Name = node.Name.String()
+	case *ast.SelectStmt:
+		t.Name = node.From.TableRefs.Left.(*ast.TableSource).Source.(*ast.TableName).Name.String()
+	case *ast.InsertStmt:
+		t.Name = node.Table.TableRefs.Left.(*ast.TableSource).Source.(*ast.TableName).Name.String()
 	}
-	if r, ok := node.(*ast.SelectStmt); ok {
-		t.Name = r.From.TableRefs.Left.(*ast.TableSource).Source.(*ast.TableName).Name.String()
-	}
+
 }
 
 func (t *Table) CheckTableName() string {
 	if t.Name != "tikv" {
-		return fmt.Sprintf("Illegal table name: %s, must be tikv.", t.Name)
+		s := fmt.Sprintf("Illegal table name: `%s`, must be tikv.", t.Name)
+		fmt.Println(s)
+		return s
 	}
 	return ""
 }

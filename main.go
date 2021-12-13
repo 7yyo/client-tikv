@@ -10,8 +10,8 @@ import (
 
 func main() {
 
-	pdEndPoints := tikv.ParseArgs()
-	c, err := tikv.NewCompleter(pdEndPoints)
+	//pdEndPoints := tikv.ParseArgs()
+	c, err := tikv.NewCompleter([]string{"172.16.5.133:2379"})
 	if err != nil {
 		fmt.Printf("%s, exit", err)
 		os.Exit(0)
@@ -39,5 +39,5 @@ func bye() string {
 }
 
 func label() string {
-	return "tikv> "
+	return "tikv > "
 }

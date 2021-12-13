@@ -30,6 +30,17 @@ func NewKvClient(pdEndPoint []string) (*tikv.RawKVClient, error) {
 	return c, nil
 }
 
+func (c *Completer) Put(sql *syntax.SQL) (string, error) {
+	t := time.Now()
+	for _, kv := range sql.KvPairs {
+		err := c.client.Put([]byte(kv.Key), []byte(kv.Value))
+		if err != nil {
+			return "", err
+		}
+	}
+	return queryOkNRows(1, t), nil
+}
+
 func (c *Completer) Get(sql *syntax.SQL) (string, error) {
 	if isSearchKv(sql.Fields) {
 		return c.getKv2Pairs(sql)
