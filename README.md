@@ -1,11 +1,11 @@
-# client-tikv
+# Client-TiKV
 
 A client for TiKV, Operate TiKV using SQL.
 
 # Get start
 It is recommended to use `MacOS` for stable operation
 ```shell
-./tikv-client --pd 172.16.5.133:2379
+./tikv-client --pd host1,host2,host3
 ```
 
 # Build
@@ -15,37 +15,22 @@ It is recommended to use `MacOS` for stable operation
 
 # Usage
 
-```sql
-tikv > insert into tikv values ('pingcap','{"name":"tidb","url":"www.tidb.com"}')
-Query OK, 1 rows affected (0.062081 sec)
-    
-tikv > insert into tikv values ('PingCAP','{"name":"tikv","url":"www.tikv.com"}')
-Query OK, 1 rows affected (0.009297 sec)
+## Put
+![image](https://github.com/7yyo/client-tikv/blob/master/gif/batch-put.gif)
 
-tikv > select kv from tikv where k in ('pingcap','PingCAP');
-+---------+--------------------------------------+
-| KEY     | VALUE                                |
-+---------+--------------------------------------+
-| pingcap | {"name":"tidb","url":"www.tidb.com"} |
-| PingCAP | {"name":"tikv","url":"www.tikv.com"} |
-+---------+--------------------------------------+
-Query OK, 2 rows affected (0.021388 sec)
+## Get
+![image](https://github.com/7yyo/client-tikv/blob/master/gif/batch-get.gif)
 
-tikv > select name,url from tikv where k in ('pingcap','PingCAP');
-+------+--------------+
-| NAME | URL          |
-+------+--------------+
-| tidb | www.tidb.com |
-| tikv | www.tikv.com |
-+------+--------------+
-2 rows in set (0.026630 sec)
+## Get fields
+> Just support `JSON` format value
 
-```
+![image](https://github.com/7yyo/client-tikv/blob/master/gif/batch-get-field.gif)
 
 # Todo
-[x] get
-[x] batch get
-[x] put
-[x] batch put
-[ ] delete
-[ ] batch delete
+- [x] get
+- [x] batch get
+- [x] get for fields
+- [x] put
+- [x] batch put
+- [ ] delete
+- [ ] batch delete
