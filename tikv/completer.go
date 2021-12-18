@@ -27,19 +27,13 @@ func NewCompleter(pdEndPoint []string) (*Completer, error) {
 
 func (c *Completer) Complete(d prompt.Document) []prompt.Suggest {
 
-	if d.GetWordBeforeCursor() == "" {
-		return []prompt.Suggest{}
-	}
-
 	args := specificationArgs(d)
 
 	if len(args) == 1 {
 		s = []prompt.Suggest{
-			{Text: syntax.Get, Description: "Get kv pairs from tikv."},
-			{Text: syntax.Put, Description: "Put kv pairs to tikv."},
+			{Text: syntax.Get, Description: "Get the key-value pairs of the corresponding key from tikv."},
+			{Text: syntax.Put, Description: "Insert key-value pairs into tikv, each values() should only have two values of kv."},
 			{Text: syntax.Exit, Description: "Exit tikv-client."},
-			{Text: syntax.Quit, Description: "Exit tikv-client."},
-			{Text: syntax.Q, Description: "Exit tikv-client."},
 		}
 	}
 
@@ -47,18 +41,11 @@ func (c *Completer) Complete(d prompt.Document) []prompt.Suggest {
 		switch args[0] {
 		case syntax.Get:
 			c.operateType = syntax.Get
+			s = option.GetOption(args)
 		case syntax.Put:
 			c.operateType = syntax.Put
+			s = option.PutOption(args)
 		}
-	}
-
-	switch c.operateType {
-	case syntax.Get:
-		s = option.GetOption(args)
-		c.clearOperate(8, args)
-	case syntax.Put:
-		s = option.PutOption(args)
-		c.clearOperate(5, args)
 	}
 
 	return prompt.FilterHasPrefix(s, d.GetWordBeforeCursor(), true)
@@ -73,10 +60,4 @@ func specificationArgs(d prompt.Document) []string {
 		}
 	}
 	return args
-}
-
-func (c *Completer) clearOperate(n int, args []string) {
-	if n == len(args) {
-		c.operateType = ""
-	}
 }

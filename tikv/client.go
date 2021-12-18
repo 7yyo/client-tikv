@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/pingcap/parser/ast"
+	"github.com/pingcap/log"
 	"github.com/tikv/client-go/v2/config"
 	"github.com/tikv/client-go/v2/tikv"
 	p "github.com/tikv/pd/client"
+	"go.uber.org/zap/zapcore"
 	"strings"
 	e "tikv-client/error"
 	"tikv-client/syntax"
@@ -23,6 +24,10 @@ func ParseArgs() []string {
 }
 
 func NewKvClient(pdEndPoint []string) (*tikv.RawKVClient, error) {
+
+	// In order to don't print log from client-go, set log level = panic.
+	setLogLevel(zapcore.PanicLevel)
+
 	c, err := tikv.NewRawKVClient(pdEndPoint, config.DefaultConfig().Security, p.WithMaxErrorRetry(1))
 	if err != nil {
 		return nil, err
@@ -30,44 +35,61 @@ func NewKvClient(pdEndPoint []string) (*tikv.RawKVClient, error) {
 	return c, nil
 }
 
+func setLogLevel(l zapcore.Level) {
+	log.SetLevel(l)
+}
+
 func (c *Completer) Put(sql *syntax.SQL) (string, error) {
 	t := time.Now()
+	if sql.KvPairs == nil {
+		return "", e.ErrInsertValueCount()
+	}
 	for _, kv := range sql.KvPairs {
 		err := c.client.Put([]byte(kv.Key), []byte(kv.Value))
 		if err != nil {
 			return "", err
 		}
 	}
-	return queryOkNRows(1, t), nil
+	return util.QueryOkNRows(len(sql.KvPairs), t), nil
 }
 
+// Get or batchGet
 func (c *Completer) Get(sql *syntax.SQL) (string, error) {
-	if isSearchKv(sql.Fields) {
+	if syntax.IsSearchKvPairs(sql.Fields) {
 		return c.getKv2Pairs(sql)
 	} else {
 		return c.getKv2Field(sql)
 	}
 }
 
+// Get kv pairs
 func (c *Completer) getKv2Pairs(sql *syntax.SQL) (string, error) {
 	t := time.Now()
-	tbl := syntax.NewKvDisplayTable()
-	for _, kv := range sql.KvPairs {
-		value, err := c.client.Get([]byte(kv.Key))
-		if err != nil {
-			return "", err
-		}
-		if value != nil {
-			syntax.NewKvTableRow(tbl, kv, value)
+
+	tbl := util.NewKvDisplayTable()
+	keys := syntax.GetKeys(sql.KvPairs)
+
+	rs, err := c.client.BatchGet(keys)
+	if err != nil {
+		return "", err
+	}
+
+	for i, kv := range sql.KvPairs {
+		kv.Value = string(rs[i])
+		if kv.Value != "" {
+			util.NewKvTableRow(tbl, kv)
 		}
 	}
+
 	if tbl.Length() == 0 {
-		return emptyResult(), nil
+		return util.EmptyResult(), nil
 	}
 	tbl.Render()
-	return queryOkNRows(tbl.Length(), t), nil
+
+	return util.QueryOkNRows(tbl.Length(), t), nil
 }
 
+// Get fields from kv by json
 func (c *Completer) getKv2Field(sql *syntax.SQL) (string, error) {
 
 	t := time.Now()
@@ -77,7 +99,7 @@ func (c *Completer) getKv2Field(sql *syntax.SQL) (string, error) {
 		fieldNames = append(fieldNames, field.Text())
 	}
 
-	tbl := syntax.NewNormalDisplayTable(fieldNames)
+	tbl := util.NewNormalDisplayTable(fieldNames)
 	m := make(map[string]string)
 	for _, kv := range sql.KvPairs {
 		value, err := c.client.Get([]byte(kv.Key))
@@ -91,7 +113,7 @@ func (c *Completer) getKv2Field(sql *syntax.SQL) (string, error) {
 		if err != nil {
 			return "", e.ErrParseJson(err.Error(), string(value))
 		}
-		err = hasField(m, sql.Fields)
+		err = syntax.HasField(m, sql.Fields)
 		if err != nil {
 			return "", err
 		}
@@ -103,36 +125,8 @@ func (c *Completer) getKv2Field(sql *syntax.SQL) (string, error) {
 	}
 
 	if tbl.Length() == 0 {
-		return emptyResult(), nil
+		return util.EmptyResult(), nil
 	}
 	tbl.Render()
 	return fmt.Sprintf("%d rows in set (%f sec)", tbl.Length(), util.Duration(t)), nil
-}
-
-func hasField(m map[string]string, fields []*ast.SelectField) error {
-	for _, f := range fields {
-		if m[f.Text()] == "" {
-			return e.ErrUnknownColumn(f.Text())
-		}
-	}
-	return nil
-}
-
-func isSearchKv(fields []*ast.SelectField) bool {
-	if len(fields) == 1 && fields[0].Text() == "kv" {
-		return true
-	}
-	return false
-}
-
-func emptyResult() string {
-	return "Empty set (0.00 sec)"
-}
-
-func queryOk0Rows(t time.Time) string {
-	return fmt.Sprintf("Query OK, 0 rows affected (%f sec)", util.Duration(t))
-}
-
-func queryOkNRows(n int, t time.Time) string {
-	return fmt.Sprintf("Query OK, %d rows affected (%f sec)", n, util.Duration(t))
 }

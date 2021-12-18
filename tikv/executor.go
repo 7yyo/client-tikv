@@ -9,9 +9,10 @@ import (
 
 func (c *Completer) Executor(s string) {
 
+	// Execute cmd, clean up operateType
 	c.operateType = ""
 
-	if strings.TrimSpace(s) == syntax.Exit || strings.TrimSpace(s) == syntax.Quit || strings.TrimSpace(s) == syntax.Q {
+	if strings.TrimSpace(strings.ToUpper(s)) == syntax.Exit {
 		fmt.Println("Bye")
 		os.Exit(0)
 		return
@@ -31,21 +32,22 @@ func (c *Completer) Executor(s string) {
 		return
 	}
 
-	if sql.Table.CheckTableName() != "" {
+	if err := sql.Table.CheckTableName(); err != nil {
+		fmt.Println(err.Error())
 		return
 	}
 
-	var r string
+	var result string
 	switch sql.Operate {
 	case "get":
-		r, err = c.Get(sql)
+		result, err = c.Get(sql)
 	case "put":
-		r, err = c.Put(sql)
+		result, err = c.Put(sql)
 	}
 	if err != nil {
 		fmt.Println(err)
 	} else {
-		fmt.Println(r)
+		fmt.Println(result)
 	}
 
 }

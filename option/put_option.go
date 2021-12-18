@@ -26,6 +26,12 @@ func PutOption(args []string) []prompt.Suggest {
 		s = []prompt.Suggest{
 			{Text: syntax.BracketsIn, Description: "No need to explain it."},
 		}
+	default:
+		if len(args) != 1 {
+			s = []prompt.Suggest{
+				{Text: "," + syntax.BracketsIn, Description: "No need to explain it."},
+			}
+		}
 	}
 	return s
 }
