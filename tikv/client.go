@@ -3,7 +3,6 @@ package tikv
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
 	"github.com/pingcap/log"
 	"github.com/tikv/client-go/v2/config"
 	"github.com/tikv/client-go/v2/tikv"
@@ -128,5 +127,6 @@ func (c *Completer) getKv2Field(sql *syntax.SQL) (string, error) {
 		return util.EmptyResult(), nil
 	}
 	tbl.Render()
-	return fmt.Sprintf("%d rows in set (%f sec)", tbl.Length(), util.Duration(t)), nil
+
+	return util.NRowsInSet(tbl.Length(), t), nil
 }

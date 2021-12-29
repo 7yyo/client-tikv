@@ -23,7 +23,7 @@ func ErrParseJson(s ...string) Error {
 }
 
 func ErrTableName(s ...string) Error {
-	msg := fmt.Sprintf("Illegal table name: `%s`, must be `TiKV`.", s[0])
+	msg := fmt.Sprintf("Illegal table name: `%s`, must be `tikv`.", s[0])
 	return Error{message: msg}
 }
 

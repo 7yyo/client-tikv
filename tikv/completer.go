@@ -4,8 +4,6 @@ import (
 	"github.com/c-bata/go-prompt"
 	"github.com/tikv/client-go/v2/tikv"
 	"strings"
-	"tikv-client/option"
-	"tikv-client/syntax"
 )
 
 var s []prompt.Suggest
@@ -13,6 +11,7 @@ var s []prompt.Suggest
 type Completer struct {
 	client      *tikv.RawKVClient
 	operateType string
+	pdEndPoint  []string
 }
 
 func NewCompleter(pdEndPoint []string) (*Completer, error) {
@@ -21,30 +20,44 @@ func NewCompleter(pdEndPoint []string) (*Completer, error) {
 		return nil, err
 	}
 	return &Completer{
-		client: c,
+		client:     c,
+		pdEndPoint: pdEndPoint,
 	}, nil
 }
 
 func (c *Completer) Complete(d prompt.Document) []prompt.Suggest {
 
-	args := specificationArgs(d)
-
-	if len(args) == 1 {
-		s = []prompt.Suggest{
-			{Text: syntax.Get, Description: "Get the key-value pairs of the corresponding key from tikv."},
-			{Text: syntax.Put, Description: "Insert key-value pairs into tikv, each values() should only have two values of kv."},
-			{Text: syntax.Exit, Description: "Exit tikv-client."},
-		}
+	if d.TextBeforeCursor() == "" {
+		return []prompt.Suggest{}
 	}
 
-	if len(args) >= 2 {
-		switch args[0] {
-		case syntax.Get:
-			c.operateType = syntax.Get
-			s = option.GetOption(args)
-		case syntax.Put:
-			c.operateType = syntax.Put
-			s = option.PutOption(args)
+	args := specificationArgs(d)
+
+	s = []prompt.Suggest{
+		{Text: "select"},
+		{Text: "insert into"},
+		{Text: "from"},
+		{Text: "where"},
+		{Text: "values"},
+		{Text: "order by"},
+	}
+
+	if len(args) > 1 {
+		switch strings.ToUpper(args[len(args)-2]) {
+		case "FROM":
+			s = []prompt.Suggest{
+				{Text: "tikv"},
+				{Text: "regions"},
+			}
+		case "INTO":
+			s = []prompt.Suggest{
+				{Text: "tikv"},
+			}
+		case "SELECT":
+			s = []prompt.Suggest{
+				{Text: "tidb_parse_tso()"},
+			}
+		default:
 		}
 	}
 

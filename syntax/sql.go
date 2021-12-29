@@ -6,6 +6,7 @@ import (
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/opcode"
 	"github.com/pingcap/parser/test_driver"
+	"strings"
 	e "tikv-client/error"
 )
 
@@ -14,26 +15,10 @@ type SQL struct {
 	Operate string
 	Fields  []*ast.SelectField
 	Cols    []*ast.ColumnDef
+	OrderBy string
 	KvPairs []KvPair
 	Error   string
 }
-
-const (
-	Get        = "SELECT"
-	Put        = "INSERT"
-	Kv         = "KV"
-	From       = "FROM"
-	Tikv       = "TIKV"
-	Where      = "WHERE"
-	Key        = "K"
-	Eq         = "="
-	In         = "IN"
-	Apostrophe = "''"
-	BracketsIn = "('','')"
-	Exit       = "EXIT"
-	Into       = "INTO"
-	Values     = "VALUES"
-)
 
 func Parser(astNode *ast.StmtNode) *SQL {
 	s := SQL{}
@@ -49,10 +34,11 @@ func (s *SQL) Enter(astNode ast.Node) (ast.Node, bool) {
 		return astNode, true
 	}
 
-	s.setOperateType(astNode)
-	s.setFields(astNode)
-	s.setKvPairs(astNode)
-	s.Table.setTableName(astNode)
+	s.operateType(astNode)
+	s.fields(astNode)
+	s.orderBy(astNode)
+	s.kvPairs(astNode)
+	s.Table.tableName(astNode)
 
 	return astNode, true
 }
@@ -61,7 +47,7 @@ func (s *SQL) Leave(node ast.Node) (ast.Node, bool) {
 	return node, true
 }
 
-func (s *SQL) setOperateType(astNode ast.Node) {
+func (s *SQL) operateType(astNode ast.Node) {
 	switch astNode.(type) {
 	case *ast.SelectStmt:
 		s.Operate = "get"
@@ -72,14 +58,23 @@ func (s *SQL) setOperateType(astNode ast.Node) {
 	}
 }
 
-func (s *SQL) setFields(astNode ast.Node) {
+func (s *SQL) fields(astNode ast.Node) {
 	switch node := astNode.(type) {
 	case *ast.SelectStmt:
 		s.Fields = node.Fields.Fields
 	}
 }
 
-func (s *SQL) setKvPairs(astNode ast.Node) {
+func (s *SQL) orderBy(astNode ast.Node) {
+	switch node := astNode.(type) {
+	case *ast.SelectStmt:
+		if node.OrderBy != nil {
+			s.OrderBy = strings.ToUpper(node.OrderBy.Items[0].Expr.(*ast.ColumnNameExpr).Name.OrigColName())
+		}
+	}
+}
+
+func (s *SQL) kvPairs(astNode ast.Node) {
 	var kvPairs []KvPair
 	var kv KvPair
 	switch node := astNode.(type) {
@@ -118,18 +113,30 @@ func (s *SQL) setKvPairs(astNode ast.Node) {
 func (s *SQL) checkSyntax(astNode ast.Node) {
 	switch node := astNode.(type) {
 	case *ast.SelectStmt:
-		// Select should be `=` or `in`
-		switch whereNode := node.Where.(type) {
-		case *ast.BinaryOperationExpr:
-			if whereNode.Op != opcode.EQ {
+		tName := GetTableName(astNode)
+		if node.OrderBy != nil {
+			if len(node.OrderBy.Items) > 1 {
+				s.Error = "Only support 1 order by."
+			}
+		}
+		if tName != "regions" {
+			// Normal select should be `=` or `in`
+			switch whereNode := node.Where.(type) {
+			case *ast.BinaryOperationExpr:
+				if whereNode.Op != opcode.EQ {
+					s.unsupportedSQL(astNode.Text())
+				}
+			case *ast.PatternInExpr:
+				if whereNode.Not {
+					s.unsupportedSQL(astNode.Text())
+				}
+			default:
 				s.unsupportedSQL(astNode.Text())
 			}
-		case *ast.PatternInExpr:
-			if whereNode.Not {
+		} else {
+			if node.Where != nil {
 				s.unsupportedSQL(astNode.Text())
 			}
-		default:
-			s.unsupportedSQL(astNode.Text())
 		}
 	case *ast.InsertStmt:
 		for _, list := range node.Lists {
@@ -152,7 +159,7 @@ func HasField(m map[string]string, fields []*ast.SelectField) error {
 }
 
 func IsSearchKvPairs(fields []*ast.SelectField) bool {
-	if len(fields) == 1 && fields[0].Text() == Kv {
+	if len(fields) == 1 && strings.ToUpper(fields[0].Text()) == "" {
 		return true
 	}
 	return false

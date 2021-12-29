@@ -44,3 +44,7 @@ func QueryOk0Rows(t time.Time) string {
 func QueryOkNRows(n int, t time.Time) string {
 	return fmt.Sprintf("Query OK, %d rows affected (%f sec)", n, Duration(t))
 }
+
+func NRowsInSet(n int, t time.Time) string {
+	return fmt.Sprintf("%d rows in set (%f sec)", n, Duration(t))
+}
