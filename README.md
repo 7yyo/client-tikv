@@ -5,7 +5,7 @@ A client for `TiKV`.
 # Get start
 It is recommended to use `MacOS` for stable operation
 ```shell
-./tikv-client --pd host1,host2,host3
+./tikv-console --pd host1,host2,host3
 ```
 
 # Build

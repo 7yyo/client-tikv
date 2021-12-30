@@ -1,27 +1,36 @@
-package tikv
+package builder
 
 import (
+	"flag"
 	"github.com/c-bata/go-prompt"
+	"github.com/pingcap/log"
+	"github.com/tikv/client-go/v2/config"
 	"github.com/tikv/client-go/v2/tikv"
+	p "github.com/tikv/pd/client"
+	"go.uber.org/zap/zapcore"
 	"strings"
+	pd2 "tikv-client/pd"
 )
 
 var s []prompt.Suggest
 
 type Completer struct {
-	client      *tikv.RawKVClient
+	Client      *tikv.RawKVClient
 	operateType string
 	pdEndPoint  []string
+	Pd          pd2.Pd
 }
 
 func NewCompleter(pdEndPoint []string) (*Completer, error) {
-	c, err := NewKvClient(pdEndPoint)
+	c, err := newKvClient(pdEndPoint)
+	p := pd2.PdInfo(pdEndPoint[0])
 	if err != nil {
 		return nil, err
 	}
 	return &Completer{
-		client:     c,
+		Client:     c,
 		pdEndPoint: pdEndPoint,
+		Pd:         *p,
 	}, nil
 }
 
@@ -73,4 +82,29 @@ func specificationArgs(d prompt.Document) []string {
 		}
 	}
 	return args
+}
+
+func ParseArgs() []string {
+	var pd string
+	flag.StringVar(&pd, "pd", "", "pd endpoints")
+	flag.Parse()
+	return strings.Split(pd, ",")
+}
+
+func newKvClient(pdEndPoint []string) (*tikv.RawKVClient, error) {
+
+	// In order to don't print log from console-go, set log level = panic.
+	setLogLevel(zapcore.PanicLevel)
+
+	var c *tikv.RawKVClient
+	var err error
+	if c, err = tikv.NewRawKVClient(pdEndPoint, config.DefaultConfig().Security, p.WithMaxErrorRetry(1)); err != nil {
+		return nil, err
+	}
+
+	return c, nil
+}
+
+func setLogLevel(level zapcore.Level) {
+	log.SetLevel(level)
 }

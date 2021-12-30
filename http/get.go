@@ -1,7 +1,6 @@
 package http
 
 import (
-	"fmt"
 	"io/ioutil"
 	"net/http"
 )
@@ -11,9 +10,9 @@ const (
 	Tso    = "tiup ctl:%s pd -u http://%s tso %d"
 )
 
-func ReqGet(cmd string, pdEndPoint string) ([]byte, error) {
+func ReqGet(cmd string) ([]byte, error) {
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", fmt.Sprintf(cmd, pdEndPoint), nil)
+	req, err := http.NewRequest("GET", cmd, nil)
 	if err != nil {
 		return nil, err
 	}
