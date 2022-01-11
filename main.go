@@ -1,27 +1,33 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"github.com/c-bata/go-prompt"
 	_ "github.com/pingcap/parser/test_driver"
 	"os"
-	"tikv-client/builder"
-	p "tikv-client/pd"
+	"tikv-client/client"
+	"tikv-client/util"
 )
 
 func main() {
 
-	pdEndPoints := builder.ParseArgs()
-	//pdEndPoints := []string{"172.16.101.3:2479"}
-	c, err := builder.NewCompleter(pdEndPoints)
+	pdEndPoint := ParseArgs()
+	// For self debug
+	if pdEndPoint == "" {
+		pdEndPoint = "172.16.101.3:2479"
+	}
+	c, err := client.NewCompleter(pdEndPoint)
 	if err != nil {
-		fmt.Printf("%s, exit", err)
+		fmt.Printf(util.Red("Can't connect to placement driver\nError: %s\n"), err)
 		os.Exit(0)
 	}
 
-	welcome(c.Pd)
+	client.Welcome(*c.PlacementDriverGroup, client.Ticlient_)
 
-	defer bye()
+	defer func() {
+		fmt.Println("GoodBye!")
+	}()
 
 	prpt := prompt.New(
 		c.Executor,
@@ -29,28 +35,18 @@ func main() {
 		prompt.OptionPrefix(">>>> "),
 		prompt.OptionSuggestionBGColor(prompt.Red),
 		prompt.OptionSuggestionTextColor(prompt.White),
-		prompt.OptionTitle("tikv-console"),
+		prompt.OptionDescriptionBGColor(prompt.White),
+		prompt.OptionDescriptionTextColor(prompt.Black),
+		prompt.OptionTitle(client.Ticlient_),
 	)
+
 	prpt.Run()
 
 }
 
-func welcome(p p.Pd) {
-
-	fmt.Printf("\n"+
-		"Welcome to tikv-console. Commands exit to exit. \n"+
-		"Server version: alpha PingCAP Community Server - GPL\n"+
-		"\n"+
-		"PD version: %s\n"+
-		"Build ts: %s\n"+
-		"Git hash: %s\n"+
-		"\n",
-		p.Version,
-		p.Build_ts,
-		p.Git_hash)
-
-}
-
-func bye() string {
-	return "GoodBye!"
+func ParseArgs() string {
+	var pdEndPoint string
+	flag.StringVar(&pdEndPoint, "pd", "", "Placement driver endpoint")
+	flag.Parse()
+	return pdEndPoint
 }

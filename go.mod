@@ -11,5 +11,6 @@ require (
 	github.com/smartystreets/goconvey v1.7.2 // indirect
 	github.com/tikv/client-go/v2 v2.0.0-alpha
 	github.com/tikv/pd v1.1.0-beta.0.20210323121136-78679e5e209d
+	go.etcd.io/etcd v0.5.0-alpha.5.0.20200824191128-ae9734ed278b // indirect
 	go.uber.org/zap v1.16.0 // indirect
 )
